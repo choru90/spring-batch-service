@@ -1,0 +1,17 @@
+spring:
+  datasource:
+    url: ${DB_URL}
+    username: ${DB_USER}
+    password: ${DB_PASS}
+  jpa:
+    hibernate:
+      ddl-auto: update
+    show-sql: true
+    generate-ddl: true
+  main:
+    allow-bean-definition-overriding: true
+  batch:
+    jdbc:
+      initialize-schema:
+    job:
+      name: userDeleteJob
