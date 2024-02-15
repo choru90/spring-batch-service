@@ -11,8 +11,11 @@ import org.springframework.batch.core.configuration.annotation.StepScope;
 import org.springframework.batch.core.job.builder.JobBuilder;
 import org.springframework.batch.core.repository.JobRepository;
 import org.springframework.batch.core.step.builder.StepBuilder;
+import org.springframework.batch.item.ItemProcessor;
 import org.springframework.batch.item.ItemWriter;
+import org.springframework.batch.item.database.JpaItemWriter;
 import org.springframework.batch.item.database.JpaPagingItemReader;
+import org.springframework.batch.item.database.builder.JpaItemWriterBuilder;
 import org.springframework.batch.item.database.builder.JpaPagingItemReaderBuilder;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
@@ -39,10 +42,12 @@ public class UserBatchConfig {
     public Step jpaPagingItemReaderStep(JobRepository jobRepository,
                                         JpaPagingItemReader<User> userUpdatePagingItemReader,
                                         ItemWriter<User> userUpdatePagingItemWriter,
+                                        ItemProcessor<User, User> userUpdatePagingItemProcessor,
                                         PlatformTransactionManager platformTransactionManager){
         return new StepBuilder("userUpdateJob", jobRepository)
                 .<User, User>chunk(CHUNK_SIZE, platformTransactionManager)
                 .reader(userUpdatePagingItemReader)
+                .processor(userUpdatePagingItemProcessor)
                 .writer(userUpdatePagingItemWriter)
                 .build();
     }
@@ -59,12 +64,19 @@ public class UserBatchConfig {
 
     @Bean
     @StepScope
-    public ItemWriter<User> userUpdatePagingItemWriter(){
-        return users -> {
-            for (User user : users) {
-                user.delete();
-            }
+    public ItemProcessor<User, User> userUpdatePagingItemProcessor(){
+        return user -> {
+            user.delete();
+            return user;
         };
+    }
+
+    @Bean
+    @StepScope
+    public JpaItemWriter<User> userUpdatePagingItemWriter(EntityManagerFactory entityManagerFactory){
+       return new JpaItemWriterBuilder<User>()
+               .entityManagerFactory(entityManagerFactory)
+               .build();
     }
 
 }
